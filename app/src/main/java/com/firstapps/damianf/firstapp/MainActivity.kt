@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.PersistableBundle
+import android.os.SystemClock
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -12,29 +13,28 @@ import java.util.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var timerState: TimerState = TimerState.STOPPED
-    private lateinit var timer: CountDownTimer
-
+    private var timer: CountDownTimer? = null
 
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.buttonStart -> startTimer()
             R.id.buttonStop -> stopTimer()
             R.id.buttonPause -> pauseTimer()
-            R.id.buttonPlus1 -> addValue(textViewMinutesDec)
-            R.id.buttonPlus2 -> addValue(textViewMinutes)
-            R.id.buttonPlus3 -> addValue(textViewSecondsDec)
-            R.id.buttonPlus4 -> addValue(textViewSeconds)
-            R.id.buttonMinus1 -> minValue(textViewMinutesDec)
-            R.id.buttonMinus2 -> minValue(textViewMinutes)
-            R.id.buttonMinus3 -> minValue(textViewSecondsDec)
-            R.id.buttonMinus4 -> minValue(textViewSeconds)
+            R.id.buttonPlus1 -> changeDisplay(textViewMinutesDec)
+            R.id.buttonPlus2 -> changeDisplay(textViewMinutes)
+            R.id.buttonPlus3 -> changeDisplay(textViewSecondsDec)
+            R.id.buttonPlus4 -> changeDisplay(textViewSeconds)
+            R.id.buttonMinus1 -> changeDisplay(textViewMinutesDec, true)
+            R.id.buttonMinus2 -> changeDisplay(textViewMinutes, true)
+            R.id.buttonMinus3 -> changeDisplay(textViewSecondsDec, true)
+            R.id.buttonMinus4 -> changeDisplay(textViewSeconds, true)
         }
     }
 
     private fun pauseTimer() {
         if (timerState != TimerState.PAUSED) {
             timerState = TimerState.PAUSED
-            timer.cancel()
+            timer?.cancel()
         }
     }
 
@@ -42,11 +42,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         if (timerState == TimerState.STOPPED || timerState == TimerState.PAUSED) {
             resetDisplay()
         }
-         if (timerState == TimerState.RUNNING) {
+        if (timerState == TimerState.RUNNING) {
             resetDisplay()
             timerState = TimerState.STOPPED
-            Toast.makeText(this@MainActivity,"Czas minął!",Toast.LENGTH_SHORT).show()
-            timer.cancel()
+            timer?.cancel()
         }
     }
 
@@ -62,7 +61,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val minutes = (textViewMinutesDec.text.toString() + textViewMinutes.text.toString()).toLong()
             val seconds = (textViewSecondsDec.text.toString() + textViewSeconds.text.toString()).toLong()
             timerState = TimerState.RUNNING
-            val milis = minutes * 60 * 1000 + seconds * 1000 + 1000L
+            val milis = minutes * 60 * 1000 + seconds * 1000 + 1200L
             timer = object : CountDownTimer(milis, 1000) {
                 override fun onFinish() {
                     timerState = TimerState.STOPPED
@@ -71,10 +70,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 override fun onTick(millisUntilFinished: Long) {
                     println(millisUntilFinished)
-                    if(millisUntilFinished > 2000L){
+                    if (millisUntilFinished > 2000L) {
                         updateDisplay(millisUntilFinished - 1000L)
 
-                    }else {
+                    } else {
+                        Toast.makeText(this@MainActivity, "Czas minął!", Toast.LENGTH_SHORT).show()
                         stopTimer()
                     }
                 }
@@ -86,42 +86,82 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        if(savedInstanceState !=null){
+            val display = savedInstanceState.getStringArrayList("DISPLAY_VALUES")
+            textViewMinutesDec.text = display?.get(0)
+            textViewMinutes.text = display?.get(1)
+            textViewSecondsDec.text = display?.get(2)
+            textViewSeconds.text = display?.get(3)
+            val state = savedInstanceState.getSerializable("STATE") as TimerState
+
+            if(state == TimerState.RUNNING){
+                startTimer()
+            }else{
+                timerState = state
+            }
+
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
         outState?.run {
-
+            putStringArrayList(
+                "DISPLAY_VALUES",
+                arrayListOf(
+                    textViewMinutesDec.text.toString(),
+                    textViewMinutes.text.toString(),
+                    textViewSecondsDec.text.toString(),
+                    textViewSeconds.text.toString()
+                )
+            )
+            putSerializable("STATE", timerState)
+            timer?.cancel()
         }
         super.onSaveInstanceState(outState)
     }
 
-    private fun addValue(textView: TextView) {
+    private fun changeDisplay(textView: TextView, remove: Boolean = false) {
         if (timerState == TimerState.STOPPED) {
-            val temp = textView.text.toString().toInt()
+            val evalSign = if (remove) -1 else 1
+            val cantRemove = (textView.text == "0" && remove)
 
-            if (temp in 0..8) {
-                textView.text = (temp + 1).toString()
-            } else if (temp == 9) {
-                textView.text = "0"
-            }
-        }
-    }
+            val seconds = ((textViewSecondsDec.text.toString()) + (textViewSeconds.text.toString())).toInt()
+            val minutes = ((textViewMinutesDec.text.toString()) + (textViewMinutes.text.toString())).toInt()
+            val timeInSeconds = minutes * 60 + seconds
+            if (cantRemove) {
+                when (textView.id) {
+                    R.id.textViewSeconds -> {
+                        textView.text = "9"
+                    }
+                    R.id.textViewSecondsDec -> {
+                        textView.text = "5"
+                    }
+                    R.id.textViewMinutes -> {
+                        textView.text = "9"
+                    }
+                    R.id.textViewMinutesDec -> {
+                        textView.text = "9"
+                    }
+                }
+            } else {
+                when (textView.id) {
+                    R.id.textViewSeconds -> {
 
-    private fun minValue(textView: TextView) {
-        if (timerState == TimerState.STOPPED) {
-            val temp = textView.text.toString().toInt()
+                        updateDisplay((timeInSeconds + evalSign * 1) * 1000L)
 
-            if (temp != 0) {
-                if (temp in 1..9) {
-                    textView.text = (temp - 1).toString()
-
+                    }
+                    R.id.textViewSecondsDec -> {
+                        updateDisplay((timeInSeconds + evalSign * 10) * 1000L)
+                    }
+                    R.id.textViewMinutes -> {
+                        updateDisplay((timeInSeconds + evalSign * 60) * 1000L)
+                    }
+                    R.id.textViewMinutesDec -> {
+                        updateDisplay((timeInSeconds + evalSign * 600) * 1000L)
+                    }
                 }
             }
         }
-    }
-
-    private fun setDisplay(mins: String, sec: String) {
-
     }
 
     private fun updateDisplay(value: Long) {
