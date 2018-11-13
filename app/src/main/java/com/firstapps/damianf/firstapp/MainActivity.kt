@@ -1,15 +1,12 @@
 package com.firstapps.damianf.firstapp
 
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.os.PersistableBundle
-import android.os.SystemClock
+import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var timerState: TimerState = TimerState.STOPPED
@@ -86,7 +83,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        if(savedInstanceState !=null){
+        if (savedInstanceState != null) {
             val display = savedInstanceState.getStringArrayList("DISPLAY_VALUES")
             textViewMinutesDec.text = display?.get(0)
             textViewMinutes.text = display?.get(1)
@@ -94,9 +91,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             textViewSeconds.text = display?.get(3)
             val state = savedInstanceState.getSerializable("STATE") as TimerState
 
-            if(state == TimerState.RUNNING){
+            if (state == TimerState.RUNNING) {
                 startTimer()
-            }else{
+            } else {
                 timerState = state
             }
 
@@ -124,41 +121,64 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         if (timerState == TimerState.STOPPED) {
             val evalSign = if (remove) -1 else 1
             val cantRemove = (textView.text == "0" && remove)
+            val value = textView.text.toString().toInt()
 
-            val seconds = ((textViewSecondsDec.text.toString()) + (textViewSeconds.text.toString())).toInt()
-            val minutes = ((textViewMinutesDec.text.toString()) + (textViewMinutes.text.toString())).toInt()
-            val timeInSeconds = minutes * 60 + seconds
             if (cantRemove) {
                 when (textView.id) {
-                    R.id.textViewSeconds -> {
+                    R.id.textViewMinutesDec -> {
                         textView.text = "9"
                     }
+
+                    R.id.textViewMinutes -> {
+                        textView.text = "9"
+                    }
+
                     R.id.textViewSecondsDec -> {
                         textView.text = "5"
                     }
-                    R.id.textViewMinutes -> {
+
+                    R.id.textViewSeconds -> {
                         textView.text = "9"
                     }
-                    R.id.textViewMinutesDec -> {
-                        textView.text = "9"
-                    }
+
                 }
             } else {
+
                 when (textView.id) {
-                    R.id.textViewSeconds -> {
-
-                        updateDisplay((timeInSeconds + evalSign * 1) * 1000L)
-
-                    }
-                    R.id.textViewSecondsDec -> {
-                        updateDisplay((timeInSeconds + evalSign * 10) * 1000L)
-                    }
-                    R.id.textViewMinutes -> {
-                        updateDisplay((timeInSeconds + evalSign * 60) * 1000L)
-                    }
                     R.id.textViewMinutesDec -> {
-                        updateDisplay((timeInSeconds + evalSign * 600) * 1000L)
+
+                        if (value == 9 && !remove) {
+                            textView.text = "0"
+                        } else {
+                            textView.text = (value + evalSign * 1).toString()
+                        }
                     }
+
+                    R.id.textViewMinutes -> {
+                        if (value == 9 && !remove) {
+                            textView.text = "0"
+                        } else {
+                            textView.text = (value + evalSign * 1).toString()
+                        }
+                    }
+
+                    R.id.textViewSecondsDec -> {
+                        if (value == 5 && !remove) {
+                            textView.text = "0"
+                        } else {
+                            textView.text = (value + evalSign * 1).toString()
+                        }
+                    }
+
+                    R.id.textViewSeconds -> {
+                        if (value == 9 && !remove) {
+                            textView.text = "0"
+                        } else {
+                            textView.text = (value + evalSign * 1).toString()
+                        }
+                    }
+
+
                 }
             }
         }
