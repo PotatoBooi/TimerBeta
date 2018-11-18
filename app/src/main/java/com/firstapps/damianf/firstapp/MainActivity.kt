@@ -1,5 +1,7 @@
 package com.firstapps.damianf.firstapp
 
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.support.v7.app.AppCompatActivity
@@ -11,6 +13,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var timerState: TimerState = TimerState.STOPPED
     private var timer: CountDownTimer? = null
+    private var player: Ringtone? = null
 
     override fun onClick(v: View?) {
         when (v?.id) {
@@ -25,6 +28,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             R.id.buttonMinus2 -> changeDisplay(textViewMinutes, true)
             R.id.buttonMinus3 -> changeDisplay(textViewSecondsDec, true)
             R.id.buttonMinus4 -> changeDisplay(textViewSeconds, true)
+            R.id.buttonMute -> stopSound()
         }
     }
 
@@ -72,6 +76,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                     } else {
                         Toast.makeText(this@MainActivity, "Czas minął!", Toast.LENGTH_SHORT).show()
+                        playSound()
                         stopTimer()
                     }
                 }
@@ -83,6 +88,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         if (savedInstanceState != null) {
             val display = savedInstanceState.getStringArrayList("DISPLAY_VALUES")
             textViewMinutesDec.text = display?.get(0)
@@ -90,7 +96,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             textViewSecondsDec.text = display?.get(2)
             textViewSeconds.text = display?.get(3)
             val state = savedInstanceState.getSerializable("STATE") as TimerState
-
             if (state == TimerState.RUNNING) {
                 startTimer()
             } else {
@@ -100,7 +105,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        stopSound()
+    }
+
     override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
         outState?.run {
             putStringArrayList(
                 "DISPLAY_VALUES",
@@ -125,36 +136,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
             if (cantRemove) {
                 when (textView.id) {
-                    R.id.textViewMinutesDec -> {
+                    R.id.textViewMinutesDec,R.id.textViewMinutes,R.id.textViewSeconds -> {
                         textView.text = "9"
                     }
-
-                    R.id.textViewMinutes -> {
-                        textView.text = "9"
-                    }
-
                     R.id.textViewSecondsDec -> {
                         textView.text = "5"
                     }
-
-                    R.id.textViewSeconds -> {
-                        textView.text = "9"
-                    }
-
                 }
             } else {
 
                 when (textView.id) {
-                    R.id.textViewMinutesDec -> {
+                    R.id.textViewMinutesDec,R.id.textViewMinutes,R.id.textViewSeconds-> {
 
-                        if (value == 9 && !remove) {
-                            textView.text = "0"
-                        } else {
-                            textView.text = (value + evalSign * 1).toString()
-                        }
-                    }
-
-                    R.id.textViewMinutes -> {
                         if (value == 9 && !remove) {
                             textView.text = "0"
                         } else {
@@ -169,16 +162,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             textView.text = (value + evalSign * 1).toString()
                         }
                     }
-
-                    R.id.textViewSeconds -> {
-                        if (value == 9 && !remove) {
-                            textView.text = "0"
-                        } else {
-                            textView.text = (value + evalSign * 1).toString()
-                        }
-                    }
-
-
                 }
             }
         }
@@ -192,6 +175,25 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         textViewSecondsDec.text = (seconds / 10).toString()
         textViewMinutes.text = (minutes % 10).toString()
         textViewMinutesDec.text = (minutes / 10).toString()
+    }
+
+    private fun playSound() {
+        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        player = RingtoneManager.getRingtone(
+            applicationContext, uri
+        )
+        try {
+            player?.play()
+
+            buttonMute.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun stopSound() {
+        buttonMute.visibility = View.INVISIBLE
+        player?.stop()
     }
 
     private enum class TimerState {
